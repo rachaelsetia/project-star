@@ -23,22 +23,21 @@ signal ended
 
 
 @export_category("If you said yes, type the spawn area index for each enemy.")
-@export var spawnAreaIndices : Array[int] : 
-	set(value):
-		var safe : bool = setSpawnAreas
-		for i in value:
-			if (i >= spawn_areas.size() and i >= 0):
-				safe = false
-				break
-		if (safe):
-			spawnAreaIndices = value
+@export var spawnAreaIndices : Array[int]
+	#set(value):
+		#var safe : bool = setSpawnAreas
+		#for i in value:
+			#if (i >= spawn_areas.size() and i >= 0):
+				#safe = false
+				#break
+		#if (safe):
+			#spawnAreaIndices = value
 
 @onready var active = false
 
 func _ready():
 	if (Engine.is_editor_hint()):
 		return
-	
 	ended.connect(get_parent()._on_wave_end)
 
 func start():
@@ -55,7 +54,8 @@ func start():
 		
 		if instance.get_node("CollisionShape3D"):
 			# temp because enemies' height midpoints are centered at origin, not bottom
-			instance.global_position = area.get_rand_point() + Vector3.UP * instance.get_node("CollisionShape3D").shape.size/2
+			## not offsetting by collision since if we did, those with origin at the bottom will be too high. also origin should be at bottom in every casea
+			instance.global_position = area.get_rand_point() + Vector3.UP
 		else:
 			instance.global_position = area.get_rand_point() + Vector3(0.0, 1.0, 0.0)
 	started.emit()

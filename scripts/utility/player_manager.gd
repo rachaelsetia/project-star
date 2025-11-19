@@ -4,9 +4,13 @@ class_name PlayerManager
 extends Node3D
 
 @onready var current_char: Player
+var players: Array[Player]
 
 signal new_player(value : Player)
 signal player_hp_update(percent: float)
+signal player_sp_update(percent: float)
+
+signal player_special_ready
 
 
 func _init() -> void:
@@ -29,13 +33,16 @@ func _ready() -> void:
 			(c as Player).get_node("CollisionShape3D").disabled = true
 		else:
 			(c as Player).health_update.connect(player_health_update)
+			(c as Player).special_cooldown_update.connect(player_special_update)
+			(c as Player).special_available.connect(await_special)
 			player_health_update((c as Player)._hp / (c as Player)._max_hp)
+			player_special_update(1)
 		
 		c.top_level = true
 		c.global_position = global_position
 		c.global_rotation = global_rotation
-		
-	
+		players.append(c)
+
 
 func _process(_delta: float) -> void:
 	if (Engine.is_editor_hint()):
@@ -59,6 +66,9 @@ func _process(_delta: float) -> void:
 
 func player_health_update(percent: float):
 	player_hp_update.emit(percent)
+	
+func player_special_update(percent: float):
+	player_sp_update.emit(percent)
 
 
 '''
@@ -82,8 +92,17 @@ func swap_char(idx: int):
 		(current_char.state_machine as PlayerStateMachine).swap_out()
 		(new_char.state_machine as PlayerStateMachine).swap_in()
 		
-		
+		current_char.special_available.disconnect(await_special)
 		current_char.health_update.disconnect(player_health_update)
+		current_char.special_cooldown_update.disconnect(player_special_update)
 		new_char.health_update.connect(player_health_update)
+		new_char.special_cooldown_update.connect(player_special_update)
+		new_char.special_available.connect(await_special)
+		player_special_update(1.0 if new_char._has_special else \
+			(new_char.special_cd - new_char.special_cd_timer.time_left)/new_char.special_cd)
 		player_health_update(new_char._hp / new_char._max_hp)
 		current_char = new_char
+
+func await_special():
+	print("special ready bounce")
+	player_special_ready.emit()
